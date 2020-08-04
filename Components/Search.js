@@ -2,8 +2,13 @@ import React from 'react'
 import { StyleSheet, View, TextInput, Button, Text,FlatList,ActivityIndicator } from 'react-native'
 import films from '../Helpers/filmsData'
 import FilmItem from './FilmItem'
+import FilmList from './FilmList'
 import {getFlimsFromApiWithSearchedText} from '../API/TMDBApi'
+import {connect} from 'react-redux'
+
+
 class Search extends React.Component {
+
 
   constructor(props)//state permet d'influer sur le render une fois modifié
   {
@@ -54,11 +59,7 @@ class Search extends React.Component {
       )
     }
   }
-  _displayDetailForFilm = (idFilm)=>
-{
-  console.log("display film with id:"+idFilm)
-  this.props.navigation.navigate("FilmDetail",{idFilm:idFilm})
-}
+
   render() {
     return (
       <View style={styles.main_container}>
@@ -71,17 +72,13 @@ class Search extends React.Component {
 
         {this._displayLoading()}
 
-        <FlatList
-        data={this.state.films}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({item}) => <FilmItem film={item} _displayDetailForFilm={this._displayDetailForFilm}/>}
-        style ={styles.flat_list1}
-        onEndReachedThreshold={0.5}
-        onEndReached={() => {
-      if (this.page < this.totalPages) { // On vérifie qu'on n'a pas atteint la fin de la pagination (totalPages) avant de charger plus d'éléments
-         this._loadFilms()
-      }
-  }}/>
+        <FilmList
+        films = {this.state.films}
+        navigation={this.props.navigation}
+        loadFilms = {this._loadFilms}
+        page = {this.page}
+        totalPages={this.totalPages}
+        favoriteList={false}/>
 
       </View>
     )
@@ -115,5 +112,10 @@ const styles = StyleSheet.create({
   justifyContent: 'center'
 }
 })
-
-export default Search
+const mapStateToProps = state =>
+{
+  return{
+    favoritesFilm: state.favoritesFilm
+  }
+}
+export default connect(mapStateToProps)(Search)

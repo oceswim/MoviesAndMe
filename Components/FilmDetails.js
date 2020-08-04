@@ -1,6 +1,8 @@
 import React from 'react'
-import { StyleSheet, View, Text, ActivityIndicator,ScrollView,Image } from 'react-native'
+import {connect} from 'react-redux'
+import { StyleSheet, View, Text, ActivityIndicator,ScrollView,Image,TouchableOpacity } from 'react-native'
 import { getFilmDetailFromApi,getImageFromApi } from '../API/TMDBApi'
+
 class FilmDetail extends React.Component {
 constructor(props){
   super(props)
@@ -21,6 +23,17 @@ _displayLoading() {
 }
 componentDidMount()
 {
+  const favoriteFilmIndex = this.props.favoritesFilm.findIndex(item => item.id === this.props.navigation.state.params.idFilm)
+      if (favoriteFilmIndex !== -1) { // Film déjà dans nos favoris, on a déjà son détail
+        // Pas besoin d'appeler l'API ici, on ajoute le détail stocké dans notre state global au state de notre component
+        this.setState({
+          film: this.props.favoritesFilm[favoriteFilmIndex]
+        })
+        return
+      }
+      // Le film n'est pas dans nos favoris, on n'a pas son détail
+      // On appelle l'API pour récupérer son détail
+      this.setState({ isLoading: true })
   getFilmDetailFromApi(this.props.navigation.state.params.idFilm).then(data => {
           this.setState({
             film: data,
@@ -28,6 +41,29 @@ componentDidMount()
           })
         })
     }
+componentDidUpdate()
+{
+  console.log("it's an update")
+  console.log(this.props.favoritesFilm)
+}
+_toggleFavorite()
+{
+  const action ={type: "TOGGLE_FAVORITE", value: this.state.film}
+  this.props.dispatch(action)
+}
+_displayFavoriteImage() {
+    var sourceImage = require('../Images/favoriteOff.png')
+    if (this.props.favoritesFilm.findIndex(item => item.id === this.state.film.id) !== -1) {
+      // Film dans nos favoris
+      sourceImage = require('../Images/favoriteOn.png')
+    }
+    return (
+      <Image
+        style={styles.favorite_image}
+        source={sourceImage}
+      />
+    )
+}
 _displayFilm()
 {
   const {film} = this.state
@@ -35,6 +71,12 @@ _displayFilm()
   return (
     <ScrollView style={styles.scrollview_container}>
       <Image style={styles.Image} source={{uri: getImageFromApi(film.backdrop_path)}}/>
+      <Text style={styles.title_text}>{film.title}</Text>
+      <TouchableOpacity style={styles.button_favorite} title="Favoris" onPress={()=> this._toggleFavorite()}>
+    {
+      this._displayFavoriteImage()
+    }
+      </TouchableOpacity>
       <Text>{film.overview}</Text>
     </ScrollView>
   )
@@ -51,6 +93,11 @@ _displayFilm()
   }
 }
 
+const mapStateToProps = (state) => {
+  return {
+    favoritesFilm: state.favoritesFilm
+  }
+}
 const styles = StyleSheet.create({
   main_container: {
     flex: 1,
@@ -62,7 +109,17 @@ const styles = StyleSheet.create({
   Image:
   {
     height:200
+  },
+  title_text:
+  {
+    textAlign:'center',
+    fontWeight:'bold',
+    fontSize:20
+  },
+  button_favorite:
+  {
+    alignItems:'center'
   }
 })
 
-export default FilmDetail
+export default connect(mapStateToProps)(FilmDetail)
